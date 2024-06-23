@@ -12,7 +12,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 # Set your input path here (use raw string for Windows paths)
-INPUT_PDF_PATH = r"F:\myCode\pdf_translator_eng_spa\Roger Beck - The Religion of the Mithras Cult in the Roman Empire.pdf"
+INPUT_PDF_PATH = r"your/path/here.pdf"
 
 
 def get_output_path(input_path):
