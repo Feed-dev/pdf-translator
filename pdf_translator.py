@@ -2,6 +2,7 @@ import fitz  # PyMuPDF
 from PIL import Image
 import io
 import os
+import tempfile
 from googletrans import Translator
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak, Image as RLImage
@@ -63,47 +64,46 @@ def translate_pdf(input_path):
     story.append(Paragraph(translated_title, styles['Title']))
     story.append(PageBreak())
 
-    # Process each page
-    for page_num in range(len(doc)):
-        page = doc[page_num]
+    # Create a temporary directory to store images
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Process each page
+        for page_num in range(len(doc)):
+            page = doc[page_num]
 
-        # Extract text
-        text = page.get_text()
+            # Extract text
+            text = page.get_text()
 
-        # Translate text
-        translated_text = safe_translate(translator, text)
+            # Translate text
+            translated_text = safe_translate(translator, text)
 
-        # Add translated text to story
-        for paragraph in translated_text.split('\n'):
-            if paragraph.strip():
-                story.append(Paragraph(paragraph, styles['Normal']))
+            # Add translated text to story
+            for paragraph in translated_text.split('\n'):
+                if paragraph.strip():
+                    story.append(Paragraph(paragraph, styles['Normal']))
 
-        # Extract images
-        image_list = page.get_images()
+            # Extract images
+            image_list = page.get_images()
 
-        for img_index, img in enumerate(image_list):
-            xref = img[0]
-            base_image = doc.extract_image(xref)
-            image_bytes = base_image["image"]
+            for img_index, img in enumerate(image_list):
+                xref = img[0]
+                base_image = doc.extract_image(xref)
+                image_bytes = base_image["image"]
 
-            # Open image with PIL
-            img = Image.open(io.BytesIO(image_bytes))
+                # Open image with PIL
+                img = Image.open(io.BytesIO(image_bytes))
 
-            # Save image to a temporary file
-            img_path = f"temp_img_{page_num}_{img_index}.png"
-            img.save(img_path)
+                # Save image to a temporary file
+                img_path = os.path.join(temp_dir, f"temp_img_{page_num}_{img_index}.png")
+                img.save(img_path)
 
-            # Add image to story
-            img = RLImage(img_path, width=6 * inch, height=4 * inch, kind='proportional')
-            story.append(img)
+                # Add image to story
+                img = RLImage(img_path, width=6 * inch, height=4 * inch, kind='proportional')
+                story.append(img)
 
-            # Remove temporary image file
-            os.remove(img_path)
+            story.append(PageBreak())
 
-        story.append(PageBreak())
-
-    # Build the PDF
-    pdf.build(story)
+        # Build the PDF
+        pdf.build(story)
 
     print(f"Translation complete. Output saved to {output_path}")
     print(f"Original title: {original_title}")
